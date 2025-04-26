@@ -1,1 +1,3 @@
-fastapiuvicornpydanticrequests
+fastapiuvicornpydanticrequests
+PyYAML
+
