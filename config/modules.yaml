@@ -1,21 +1,30 @@
 modules:
-  - name: promptChecker
+  - name: dialogModule
     enabled: true
-    description: Checker prompts for compliance
-    path: backend/modules/prompt_checker.py
+    description: Viser compliance advarsler i realtid
+    path: frontend/dialog_module/
+
+  - name: adminModule
+    enabled: false
+    description: Giver adgang til admin-dashboard
+    path: frontend/admin_module/
+
+  - name: loggingModule
+    enabled: true
+    description: Logger prompts til backend for compliance-analyse
+    path: backend/logging/
 
   - name: riskModel
     enabled: true
-    description: Loads risk model from external source
-    path: backend/modules/risk_model.py
+    description: Risikoanalyse baseret på nøgleord
+    path: backend/risk_model/
 
-  - name: dashboardUI
-    enabled: true
-    description: Admin and user UI for compliance overview
-    path: dashboard/
-
-  - name: pluginTampermonkey
+  - name: exportModule
     enabled: false
-    description: Optional browser plugin
-    path: plugin/
+    description: Gør det muligt at eksportere data
+    path: backend/export/
 
+  - name: playgroundModule
+    enabled: true
+    description: Frontend træningsmiljø på Vercel
+    path: frontend/playground/
