@@ -1,25 +1,20 @@
 from fastapi import FastAPI
-from backend.routers import prompts, models  # Sørg for at importere dine routere korrekt
+from fastapi.middleware.cors import CORSMiddleware
+from routers import modules, prompts  # Importer dine routers her
 
-# Opret én samlet FastAPI-instans
-app = FastAPI(title="AIAmigo Compliance API")
+app = FastAPI()
 
-# Tilføj routere
-app.include_router(prompts.router, prefix="/prompts")
-app.include_router(models.router, prefix="/models")
+# CORS Middleware setup
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Åben adgang midlertidigt
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/")
-def root():
-    """
-    Root endpoint, der viser en besked om, at API'et kører.
-    """
-    return {"message": "AIAmigo Compliance API is running"}
+# Inkluder dine routers
+app.include_router(modules.router, prefix="/modules", tags=["Modules"])
+app.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
 
-@app.get("/prompts/compliance-score")
-def get_compliance_score(total: int = 0, risky: int = 0):
-    """
-    Beregner compliance score baseret på værdierne for total og risky.
-    Hvis total er 0, returneres standardværdien 100.
-    """
-    compliance = 100 if total == 0 else round(((total - risky) / total) * 100)
-    return {"complianceScore": compliance}
+# (Evt. andre routers senere)
