@@ -1,0 +1,21 @@
+modules:
+  - name: promptChecker
+    enabled: true
+    description: Checker prompts for compliance
+    path: backend/modules/prompt_checker.py
+
+  - name: riskModel
+    enabled: true
+    description: Loads risk model from external source
+    path: backend/modules/risk_model.py
+
+  - name: dashboardUI
+    enabled: true
+    description: Admin and user UI for compliance overview
+    path: dashboard/
+
+  - name: pluginTampermonkey
+    enabled: false
+    description: Optional browser plugin
+    path: plugin/
+
