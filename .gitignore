@@ -1,0 +1,27 @@
+# Mac systemfiler
+.DS_Store
+
+# Python cachefiler
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtuelle miljøer
+.venv/
+env/
+venv/
+
+# VSCode settings (hvis du bruger VSCode)
+.vscode/
+
+# Build-filer og midlertidige filer
+build/
+dist/
+*.egg-info/
+
+# Logfiler
+*.log
+
+# Extension zip-filer
+*.zip
