@@ -8,8 +8,14 @@ class PromptInput(BaseModel):
     prompt: str
 
 def calculate_aiamigo_score():
-    # Eksempelberegning baseret på antallet af prompts
-    return len(stored_prompts) * 5
+    total_prompts = len(stored_prompts)
+    risky_prompts = 0  # Midlertidigt, da vi ikke risikovurderer endnu
+
+    if total_prompts == 0:
+        return 100
+
+    score = max(0, 100 - int((risky_prompts / total_prompts) * 100))
+    return score
 
 @router.post("")
 def receive_prompt(data: PromptInput):
