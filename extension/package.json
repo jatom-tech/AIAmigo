@@ -1,0 +1,16 @@
+{
+  "name": "aiamigo-extension",
+  "version": "1.0.0",
+  "description": "AIAmigo Extension",
+  "main": "vite.config.js",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "vite": "^6.3.3"
+  },
+  "author": "",
+  "license": "ISC"
+}
+

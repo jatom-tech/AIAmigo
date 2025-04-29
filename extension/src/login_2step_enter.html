@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <title>AIAmigo 2-trins Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f7fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .login-box { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+    input[type="password"] { width: 100%; padding: 10px; margin: 1rem 0; border-radius: 6px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; background: #2e7d32; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .error { color: red; margin-top: 1rem; }
+    #pin-step { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="login-box">
+  <h1>🛡️ AIAmigo Login</h1>
+
+  <div id="password-step">
+    <input type="password" id="password" placeholder="Indtast adgangskode">
+    <br>
+    <button onclick="checkPassword()">Næste</button>
+    <div id="error1" class="error"></div>
+  </div>
+
+  <div id="pin-step">
+    <input type="password" id="pin" placeholder="Indtast PIN-kode">
+    <br>
+    <button onclick="checkPIN()">Log ind</button>
+    <div id="error2" class="error"></div>
+  </div>
+
+</div>
+
+<script>
+function checkPassword() {
+  const correctPassword = "admin123";
+  const inputPassword = document.getElementById("password").value;
+  const errorDiv = document.getElementById("error1");
+
+  if (inputPassword === correctPassword) {
+    document.getElementById("password-step").style.display = "none";
+    document.getElementById("pin-step").style.display = "block";
+    document.getElementById("pin").focus();
+  } else {
+    errorDiv.innerText = "❌ Forkert adgangskode.";
+  }
+}
+
+function checkPIN() {
+  const correctPIN = "1301";
+  const inputPIN = document.getElementById("pin").value;
+  const errorDiv = document.getElementById("error2");
+
+  if (inputPIN === correctPIN) {
+    window.location.href = "AIAmigo_Admin_Dashboard_v2_8.html";
+  } else {
+    errorDiv.innerText = "❌ Forkert PIN-kode.";
+  }
+}
+
+// Lyt på Enter-tast i begge felter
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("password").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      checkPassword();
+    }
+  });
+  document.getElementById("pin").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+      checkPIN();
+    }
+  });
+});
+</script>
+
+</body>
+</html>
