@@ -1,172 +1,154 @@
+// content.js
+console.log("AIAmigo initialiserer...");
+
+// ======================
+// MODULIMPORTER
+// ======================
 import { analyzeText } from './riskmodul.js';
 import DialogModul from './DialogModul.js';
 
-console.log("AIAmigo kører i baggrunden diskret...");
+// Importér analyzeText fra riskmodul.js
+import { analyzeText } from './riskmodul.js';
 
-(function () {
-    'use strict';
+// Test analyzeText-funktionen
+console.log("Test af analyzeText-funktionen:");
+const testText = "Dette er en test med CPR og løn.";
+const result = analyzeText(testText);
+console.log("Resultat:", result)
+// ======================
+// KERNEVARIABLER
+// ======================
+let lastDetectedPrompt = '';
+let promptList = [];
+let riskyPromptCount = 0;
 
-    let lastDetectedPrompt = '';
+// ======================
+// LOCALSTORAGE-HÅNDTERING
+// ======================
+async function loadStorage() {
+  const result = await chrome.storage.local.get(['aiamigo_prompts', 'aiamigo_risky_prompts']);
+  promptList = result.aiamigo_prompts || [];
+  riskyPromptCount = result.aiamigo_risky_prompts || 0;
+}
 
-    let promptList = JSON.parse(localStorage.getItem('aiamigo_prompts')) || [];
-    let riskyPromptCount = parseInt(localStorage.getItem('aiamigo_risky_prompts')) || 0;
+async function saveStorage() {
+  await chrome.storage.local.set({
+    aiamigo_prompts: promptList,
+    aiamigo_risky_prompts: riskyPromptCount
+  });
+}
 
-    function saveToLocalStorage() {
-        localStorage.setItem('aiamigo_prompts', JSON.stringify(promptList));
-        localStorage.setItem('aiamigo_risky_prompts', riskyPromptCount.toString());
+// ======================
+// INPUT-DETEKTION
+// ======================
+function setupMutationObserver() {
+  const observer = new MutationObserver(mutations => {
+    for(const mutation of mutations) {
+      for(const node of mutation.addedNodes) {
+        if(node.nodeType === 1) { // Kun element-noder
+          const userInput = node.querySelector?.('[contenteditable="true"], [role="textbox"]');
+          if(userInput) monitorInput(userInput);
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
+
+function monitorInput(element) {
+  element.addEventListener('input', () => {
+    const text = element.innerText.trim();
+    if(text && text !== lastDetectedPrompt) {
+      handlePrompt(text);
+    }
+  });
+}
+
+// ======================
+// PROMPT-HÅNDTERING
+// ======================
+async function handlePrompt(promptText) {
+  try {
+    lastDetectedPrompt = promptText;
+    
+    // Analysér tekst
+    const matches = analyzeText(promptText);
+    
+    // Gem data
+    promptList.push(promptText);
+    if(matches.length > 0) riskyPromptCount++;
+    
+    await saveStorage();
+
+    // Vis feedback
+    if(matches.length > 0) {
+      DialogModul.showWarning(
+        `Potentielle risici: ${matches.join(', ')}`,
+        calculateAmigoScore()
+      );
     }
 
-    function calculateAmigoScore() {
-        const totalPrompts = promptList.length;
-        return totalPrompts > 0
-            ? Math.max(0, 100 - Math.round((riskyPromptCount / totalPrompts) * 100))
-            : 100;
-    }
+  } catch(error) {
+    console.error('Fejl i prompt-håndtering:', error);
+  }
+}
 
-    function showPopup(message, type = "info") {
-        const existingPopup = document.querySelector('.aiamigo-popup');
-        if (existingPopup) existingPopup.remove();
+// ======================
+// AMIGO-SCORE
+// ======================
+function calculateAmigoScore() {
+  const total = promptList.length;
+  return total > 0 
+    ? Math.max(0, 100 - Math.round((riskyPromptCount / total) * 100))
+    : 100;
+}
 
-        const popup = document.createElement('div');
-        popup.className = 'aiamigo-popup';
-        Object.assign(popup.style, {
-            position: 'fixed',
-            bottom: '60px',
-            right: '10px',
-            backgroundColor: type === 'warning' ? '#f8d7da' : '#d1ecf1',
-            color: type === 'warning' ? '#721c24' : '#0c5460',
-            border: type === 'warning' ? '1px solid #f5c6cb' : '1px solid #bee5eb',
-            padding: '10px',
-            borderRadius: '6px',
-            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-            width: '250px',
-            zIndex: '10000',
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
-            visibility: 'hidden',
-            opacity: '0',
-            transition: 'opacity 0.5s ease',
-        });
+// ======================
+// UI-ELEMENTER
+// ======================
+function createStatusShield() {
+  const shield = document.createElement('div');
+  shield.innerHTML = `
+    <style>
+      .aiamigo-shield {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #2c3e50;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+      }
+      .aiamigo-shield:hover {
+        transform: scale(1.1);
+      }
+    </style>
+    <div class="aiamigo-shield">🛡️</div>
+  `;
+  
+  shield.querySelector('.aiamigo-shield').addEventListener('click', () => {
+    DialogModul.showStatus(`Din aktuelle Amigo Score: ${calculateAmigoScore()}%`);
+  });
 
-        popup.innerHTML = `<p style="margin: 0;">${message}</p>`;
-        document.body.appendChild(popup);
+  document.body.appendChild(shield);
+}
 
-        setTimeout(() => {
-            popup.style.visibility = 'visible';
-            popup.style.opacity = '1';
-        }, 100);
-
-        setTimeout(() => {
-            popup.style.opacity = '0';
-            setTimeout(() => popup.remove(), 500);
-        }, 5000);
-    }
-
-    window.showPopup = showPopup;
-
-    function monitorUserInput() {
-        console.log("AIAmigo overvåger diskret brugerens input...");
-        const observer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === 1) {
-                        const userBubble = node.querySelector?.('[data-message-author-role="user"]');
-                        if (userBubble) {
-                            const promptText = userBubble.innerText?.trim();
-                            if (promptText && promptText !== lastDetectedPrompt) {
-                                lastDetectedPrompt = promptText;
-
-                                const matches = analyzeText(promptText); // ← Kalder riskmodul.js
-                                if (matches.length > 0) {
-                                    riskyPromptCount++;
-                                    saveToLocalStorage();
-                                    showPopup(
-                                        `⚠️ Din tekst indeholder potentielt følsomt indhold: ${matches.join(', ')}.`,
-                                        'warning'
-                                    );
-                                }
-                                promptList.push(promptText);
-                                saveToLocalStorage();
-                            }
-                        }
-                    }
-                });
-            });
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-
-    function handleEnterKey() {
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                const activeElement = document.activeElement;
-                const promptText = activeElement?.value?.trim();
-
-                if (promptText && promptText !== lastDetectedPrompt) {
-                    lastDetectedPrompt = promptText;
-
-                    const matches = analyzeText(promptText); // ← Kalder riskmodul.js
-                    if (matches.length > 0) {
-                        riskyPromptCount++;
-                        saveToLocalStorage();
-                        showPopup(
-                            `⚠️ Din tekst indeholder potentielt følsomt indhold: ${matches.join(', ')}.`,
-                            'warning'
-                        );
-                    }
-                    promptList.push(promptText);
-                    saveToLocalStorage();
-                }
-            }
-        });
-    }
-
-    function createShield() {
-        const existingShield = document.querySelector('.aiamigo-shield');
-        if (existingShield) return;
-
-        const shield = document.createElement('div');
-        shield.className = 'aiamigo-shield';
-
-        const shieldImage = document.createElement('img');
-        shieldImage.src = './assets/icon.png'; // Lokal reference til din icon.png
-        shieldImage.alt = 'AIAmigo Shield';
-
-        Object.assign(shield.style, {
-            position: 'fixed',
-            bottom: '10px',
-            right: '10px',
-            width: '30px',
-            height: '30px',
-            zIndex: '9999',
-            cursor: 'pointer',
-            backgroundColor: '#ffffff',
-            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-        });
-
-        Object.assign(shieldImage.style, {
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-        });
-
-        shield.appendChild(shieldImage);
-
-        shield.addEventListener('click', () => {
-            const amigoScore = calculateAmigoScore();
-            showPopup(`🛡️ Din Amigo Score: ${amigoScore}%`, 'info');
-        });
-
-        document.body.appendChild(shield);
-        console.log("AIAmigo-skjold tilføjet til dokumentet.");
-    }
-
-    monitorUserInput();
-    handleEnterKey();
-    createShield();
+// ======================
+// INITIALISERING
+// ======================
+(async function init() {
+  await loadStorage();
+  setupMutationObserver();
+  createStatusShield();
+  console.log("AIAmigo klar til brug");
 })();

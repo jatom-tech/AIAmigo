@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "AIAmigo",
+  "version": "1.0",
+  "description": "AIAmigo overvåger brugerens input.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["assets/content.js"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "assets/icon.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "permissions": ["storage"]
+}

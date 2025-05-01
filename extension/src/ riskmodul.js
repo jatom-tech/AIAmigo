@@ -1,5 +1,5 @@
 // riskmodul.js
-console.log("RiskModul indlæst...");
+console.log("riskmodul indlæst...");
 
 // Risikodata
 const riskyWords = ['CPR', 'sygdom', 'løn', 'afskedigelse', 'diskrimination'];

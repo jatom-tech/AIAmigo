@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routers import modules, prompts  # Korrekt importsti
+from backend.routers import modules, prompts, auth  # Tilføj auth-router
 
 app = FastAPI()
 
@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # Inkluder routers
 app.include_router(modules.router, prefix="/modules", tags=["Modules"])
 app.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
+app.include_router(auth.router, tags=["Auth"])  # Inkluder auth-router
