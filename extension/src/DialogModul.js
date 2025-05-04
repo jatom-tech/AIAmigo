@@ -1,3 +1,4 @@
+console.log("DialogModul er korrekt indlæst.");
 const DialogModul = (function () {
     'use strict';
 
@@ -16,17 +17,16 @@ const DialogModul = (function () {
     };
 
     /**
-     * Klassificér input baseret på simple nøgleord
+     * Klassificér prompt baseret på risk-module.js
      */
     function classifyPrompt(promptText) {
-        const lowerText = promptText.toLowerCase();
-        
-        if (lowerText.includes('cpr') || lowerText.includes('personnummer') || lowerText.includes('sygdom')) {
-            return 'red';
-        } else if (lowerText.includes('kontrakt') || lowerText.includes('aftale') || lowerText.includes('pris')) {
-            return 'yellow';
-        } else {
-            return 'green';
+        try {
+            const result = window.AIAmigo.fetchRiskFromModel(promptText) || { label: 'Ukendt' };
+            const riskLevel = result.label.toLowerCase(); // Antag "Lav", "Mellem", "Høj"
+            return riskLevel === 'lav' ? 'green' : riskLevel === 'mellem' ? 'yellow' : 'red';
+        } catch (error) {
+            console.error("Fejl i classifyPrompt:", error);
+            return 'green'; // Standard risikoniveau
         }
     }
 
@@ -35,18 +35,8 @@ const DialogModul = (function () {
      */
     function showPopup(riskLevel) {
         const popup = document.createElement('div');
-        popup.style.position = 'fixed';
-        popup.style.bottom = '80px';
-        popup.style.right = '10px';
-        popup.style.backgroundColor = 'black';
-        popup.style.color = 'white';
-        popup.style.padding = '15px';
-        popup.style.borderRadius = '10px';
-        popup.style.boxShadow = '0 4px 10px rgba(0, 0, 0, 0.4)';
+        popup.classList.add('dialog-popup'); // Tilføjet CSS-klasse for styling
         popup.style.border = `2px solid ${colors[riskLevel]}`;
-        popup.style.width = '220px';
-        popup.style.textAlign = 'center';
-        popup.style.zIndex = '10001';
 
         popup.innerHTML = `
             <p style="font-size: 16px; margin: 0 0 10px 0; font-weight: bold;">Amigo Score</p>
@@ -55,7 +45,11 @@ const DialogModul = (function () {
         `;
 
         popup.querySelector('#dialog-close').onclick = () => popup.remove();
+
         document.body.appendChild(popup);
+
+        // Luk popup automatisk efter 5 sekunder
+        setTimeout(() => popup.remove(), 5000);
     }
 
     /**
@@ -71,3 +65,25 @@ const DialogModul = (function () {
         analyse,
     };
 })();
+
+// Eksempel CSS til popup
+const style = document.createElement('style');
+style.textContent = `
+    .dialog-popup {
+        position: fixed;
+        bottom: 10%;
+        right: 10px;
+        background-color: black;
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        width: 220px;
+        text-align: center;
+        z-index: 10001;
+    }
+`;
+document.head.appendChild(style);
+
+// Gør DialogModul globalt tilgængeligt
+window.DialogModul = DialogModul;
