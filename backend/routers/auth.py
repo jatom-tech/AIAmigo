@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User
-from utils.auth_utils import verify_password
+from user_models import User
+from backend.utils.auth_utils import verify_password
 
 # Konfigurer JWT
 SECRET_KEY = "your_secret_key"  # Skift til en sikker hemmelig nøgle

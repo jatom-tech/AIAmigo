@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routers import modules, prompts, auth, admin  # Tilføj admin-router
+import sys
+import os
+
 
 app = FastAPI()
 
