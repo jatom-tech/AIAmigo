@@ -1,1 +1,0 @@
-console.log("AIAmigo™ Background Service Worker startet.");

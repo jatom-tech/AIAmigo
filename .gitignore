@@ -25,3 +25,4 @@ dist/
 
 # Extension zip-filer
 *.zip
+node_modules
