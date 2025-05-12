@@ -1,32 +1,29 @@
-import random
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+from database import get_db
+from models import User
+from utils.auth_utils import verify_password
 
-SECRET_KEY = "your_secret_key"
+# Konfigurer JWT
+SECRET_KEY = "your_secret_key"  # Skift til en sikker hemmelig nøgle
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 router = APIRouter()
 
-# Dummy data for admin credentials
-ADMIN_USERNAME = "admin123"
-ADMIN_PASSWORD = "adminpassword"
-ADMIN_PIN = "1301"
-
-# Temporary storage for generated codes
-verification_codes = {}
-
+# Skemaer til login og tokens
 class LoginRequest(BaseModel):
     username: str
     password: str
 
-class VerifyCodeRequest(BaseModel):
+class TokenData(BaseModel):
     username: str
-    pin: str
-    code: int
+    role: str
 
+# Funktion til at generere JWT-token
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     if expires_delta:
@@ -37,25 +34,32 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+# Login endpoint
 @router.post("/auth/login")
-async def admin_login(request: LoginRequest):
-    if request.username == ADMIN_USERNAME and request.password == ADMIN_PASSWORD:
-        # Generate a random 6-digit verification code
-        code = random.randint(100000, 999999)
-        verification_codes[request.username] = code
-        # Simulate sending the code (e.g., via email or SMS)
-        print(f"Verification code for {request.username}: {code}")
-        return {"message": "Login successful, verification code sent"}
-    raise HTTPException(status_code=401, detail="Invalid login credentials")
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == request.username).first()
+    if not user or not verify_password(request.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    
+    access_token = create_access_token(data={"sub": user.username, "role": user.role})
+    return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/auth/verify-code")
-async def verify_code(request: VerifyCodeRequest):
-    if request.username == ADMIN_USERNAME and request.pin == ADMIN_PIN:
-        if request.username in verification_codes and verification_codes[request.username] == request.code:
-            # Remove the code after successful verification
-            del verification_codes[request.username]
-            # Create a JWT token
-            access_token = create_access_token(data={"sub": request.username})
-            return {"access_token": access_token, "token_type": "bearer"}
-        raise HTTPException(status_code=400, detail="Invalid verification code")
-    raise HTTPException(status_code=401, detail="Invalid PIN or username")
+# Funktion til at validere token
+def get_current_user(token: str = Depends(), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=401, detail="Could not validate credentials", headers={"WWW-Authenticate": "Bearer"}
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if username is None or role is None:
+            raise credentials_exception
+        token_data = TokenData(username=username, role=role)
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.username == token_data.username).first()
+    if user is None:
+        raise credentials_exception
+    return user
