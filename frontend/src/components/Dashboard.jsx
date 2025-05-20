@@ -24,6 +24,22 @@ export default function Dashboard() {
       .then((res) => res.ok ? res.json() : Promise.reject("Fejl"))
       .then((data) => setUsers(data))
       .catch(() => setUsers(initialUsers));
+
+    // ⬇️ Skånsom indlæsning af moduler
+    const riskScript = document.createElement("script");
+    riskScript.src = "/risk-module.js";
+    riskScript.async = true;
+    document.body.appendChild(riskScript);
+
+    const dialogScript = document.createElement("script");
+    dialogScript.src = "/DialogModul.js";
+    dialogScript.async = true;
+    document.body.appendChild(dialogScript);
+
+    return () => {
+      document.body.removeChild(riskScript);
+      document.body.removeChild(dialogScript);
+    };
   }, []);
 
   const toggleWord = (word) => {
@@ -190,6 +206,7 @@ export default function Dashboard() {
     </div>
   );
 }
+
 
 
 

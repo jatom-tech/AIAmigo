@@ -10,11 +10,15 @@ export default function Login({ setLoggedIn }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
     });
+
     const data = await res.json();
 
     if (data.access_token) {
+      // Gem token, brugernavn og rolle i localStorage
       localStorage.setItem("token", `Bearer ${data.access_token}`);
-      setLoggedIn(true);
+      localStorage.setItem("user", data.username);  // Gem brugernavn
+      localStorage.setItem("role", data.role);      // Gem rolle
+      setLoggedIn(true);  // Opdater login-status
     } else {
       alert("Login fejlede");
     }
@@ -22,9 +26,23 @@ export default function Login({ setLoggedIn }) {
 
   return (
     <div className="p-6 max-w-md mx-auto flex flex-col gap-4">
-      <input className="border p-2" placeholder="Brugernavn" onChange={e => setUsername(e.target.value)} />
-      <input className="border p-2" placeholder="Adgangskode" type="password" onChange={e => setPassword(e.target.value)} />
-      <button onClick={handleLogin} className="bg-blue-500 text-white px-4 py-2">Login</button>
+      <input
+        className="border p-2"
+        placeholder="Brugernavn"
+        onChange={e => setUsername(e.target.value)}
+      />
+      <input
+        className="border p-2"
+        placeholder="Adgangskode"
+        type="password"
+        onChange={e => setPassword(e.target.value)}
+      />
+      <button
+        onClick={handleLogin}
+        className="bg-blue-500 text-white px-4 py-2"
+      >
+        Login
+      </button>
     </div>
   );
 }

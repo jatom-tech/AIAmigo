@@ -4,15 +4,13 @@ from jose import JWTError, jwt
 import os
 
 # JWT konfiguration
-SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")  # Brug en sikker værdi i produktion!
+SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")
 ALGORITHM = "HS256"
 
-# Brug HTTPBearer i stedet for OAuth2PasswordBearer
 security = HTTPBearer()
-
 router = APIRouter()
 
-# Funktion til at verificere token
+# Token-validering
 def verify_token(credentials: HTTPAuthorizationCredentials):
     token = credentials.credentials
     try:
@@ -25,10 +23,25 @@ def verify_token(credentials: HTTPAuthorizationCredentials):
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-# Admin-beskyttet endpoint
+# Admin-ping
 @router.get("/admin/panel")
 async def admin_panel(credentials: HTTPAuthorizationCredentials = Depends(security)):
     user = verify_token(credentials)
     if user["role"] != "admin":
         raise HTTPException(status_code=403, detail="Access forbidden")
     return {"message": f"Welcome to the admin panel, {user['username']}"}
+
+# ✅ Nyt endpoint til frontend-dashboard
+@router.get("/admin/users")
+async def get_admin_users(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    user = verify_token(credentials)
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Access forbidden")
+
+    # Midlertidigt hardcodet svar
+    return [
+        {"navn": "Admin", "kilde": "CP", "score": 90},
+        {"navn": "Bruger 1", "kilde": "DS", "score": 73},
+        {"navn": "Bruger 2", "kilde": "ChatGPT", "score": 63},
+        {"navn": "Bruger 3", "kilde": "GPT", "score": 83},
+    ]
