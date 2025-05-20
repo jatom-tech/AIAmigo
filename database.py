@@ -27,4 +27,4 @@ def get_db() -> Session:
     try:
         yield db
     finally:
-        db.close()
+        db.close()  # Rettet metode til at lukke forbindelsen

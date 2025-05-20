@@ -19,6 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Root endpoint
+@app.get("/")
+async def root():
+    return {"message": "Hello, FastAPI is running!"}
+
+
 # Inkluder routers
 app.include_router(modules.router, prefix="/modules", tags=["Modules"])
 app.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
