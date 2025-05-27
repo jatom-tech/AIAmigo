@@ -1,36 +1,5 @@
 console.log("AIAmigo kører i baggrunden diskret...");
 
-// Dynamisk indlæsning af eksterne moduler
-function loadScript(src, onLoadCallback) {
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL(src); // Gør brug af Chrome's runtime-URL
-    script.onload = () => {
-        console.log(`${src} er korrekt indlæst.`);
-        if (onLoadCallback) onLoadCallback();
-    };
-    script.onerror = () => {
-        console.error(`Kunne ikke indlæse ${src}`);
-    };
-    document.head.appendChild(script);
-}
-
-// Indlæsning af DialogModul.js og risk-module.js
-loadScript('scripts/DialogModul.js', () => {
-    if (typeof DialogModul !== "undefined") {
-        console.log("DialogModul er korrekt indlæst.");
-    } else {
-        console.error("DialogModul blev ikke indlæst korrekt.");
-    }
-});
-
-loadScript('scripts/risk-module.js', () => {
-    if (typeof window.analyzeText === "function") {
-        console.log("Risk-modul er korrekt indlæst.");
-    } else {
-        console.error("Risk-modul blev ikke indlæst korrekt.");
-    }
-});
-
 (function () {
     'use strict';
 

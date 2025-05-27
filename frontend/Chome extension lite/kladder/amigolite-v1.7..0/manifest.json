@@ -1,0 +1,15 @@
+
+{
+  "manifest_version": 3,
+  "name": "AIAmigo Gratis Version",
+  "version": "1.7.0",
+  "description": "Gratis version med healing popups og skjold.",
+  "permissions": [],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

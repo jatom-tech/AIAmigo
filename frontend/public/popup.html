@@ -1,11 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Popup</title>
-</head>
-<body>
-    <script type="module" src="./assets/popup.js"></script>
-</body>
-</html>
+function showPopup(msg, type = "info") {
+  // Fjern evt. gamle popups
+  document.getElementById('aiamigo-popup-iframe')?.remove();
+  document.getElementById('aiamigo-popup-fallback')?.remove();
+
+  // Farver
+  let bg = "#d1ecf1", fg = "#0c5460";
+  if (type === "warning") { bg = "#f8d7da"; fg = "#721c24"; }
+  if (type === "success") { bg = "#d4edda"; fg = "#155724"; }
+  if (type === "error")   { bg = "#f8d7da"; fg = "#721c24"; }
+
+  // Prøv med iframe-popup
+  let iframe = document.createElement("iframe");
+  iframe.id = "aiamigo-popup-iframe";
+  iframe.setAttribute("aria-label", "AIAmigo-popup");
+  iframe.srcdoc = `
+    <html><body style='margin:0;padding:0;'>
+      <div style="
+        background:${bg};
+        color:${fg};
+        min-width:180px;
+        max-width:370px;
+        padding:14px 20px;
+        font-family:sans-serif;
+        font-size:15.5px;
+        border-radius:10px;
+        box-shadow:0 6px 22px rgba(0,0,0,0.13);
+        margin:0;
+        word-break:break-word;
+      ">${msg}</div>
+    </body></html>
+  `;
+  Object.assign(iframe.style, {
+    position: "fixed",
+    bottom: "60px",
+    right: "14px",
+    width: "320px",
+    height: "auto",
+    border: "none",
+    background: "transparent",
+    zIndex: 2147483647,
+    transition: "opacity 0.5s",
+    opacity: "0",
+    pointerEvents: "auto"
+  });
+  document.body.appendChild(iframe);
+  setTimeout(() => { iframe.style.opacity = "1"; }, 30);
+
+  // Efter 200ms: Hvis iframen ikke er synlig, brug fallback div
+  setTimeout(() => {
+    try {
+      const bounds = iframe.getBoundingClientRect();
+      if (
+        bounds.height < 10 ||
+        bounds.width < 10 ||
+        getComputedStyle(iframe).display === "none" ||
+        iframe.contentDocument?.body == null // CSP blokering
+      ) {
+        iframe.remove();
+        showPopupFallback(msg, bg, fg);
+      }
+    } catch (e) {
+      // CSP blokerer måske adgang
+      iframe.remove();
+      showPopupFallback(msg, bg, fg);
+    }
+  }, 200);
+
+  // Fjern popup efter 5 sekunder
+  setTimeout(() => {
+    if (iframe.parentNode) {
+      iframe.style.opacity = "0";
+      setTimeout(() => iframe.remove(), 500);
+    }
+    const fallback = document.getElementById("aiamigo-popup-fallback");
+    if (fallback) {
+      fallback.style.opacity = "0";
+      setTimeout(() => fallback.remove(), 500);
+    }
+  }, 5000);
+
+  // Fallback: simpel div-popup
+  function showPopupFallback(msg, bg, fg) {
+    let popup = document.createElement("div");
+    popup.id = "aiamigo-popup-fallback";
+    Object.assign(popup.style, {
+      position: "fixed",
+      bottom: "60px",
+      right: "14px",
+      minWidth: "180px",
+      maxWidth: "370px",
+      background: bg,
+      color: fg,
+      padding: "14px 20px",
+      borderRadius: "10px",
+      fontFamily: "sans-serif",
+      fontSize: "15.5px",
+      boxShadow: "0 6px 22px rgba(0,0,0,0.13)",
+      zIndex: 2147483647,
+      opacity: "0",
+      transition: "opacity 0.5s",
+      pointerEvents: "auto"
+    });
+    popup.innerHTML = msg;
+    document.body.appendChild(popup);
+    setTimeout(() => { popup.style.opacity = "1"; }, 30);
+  }
+}

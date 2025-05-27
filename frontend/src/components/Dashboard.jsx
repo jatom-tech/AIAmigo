@@ -1,10 +1,12 @@
+import { logoutAndRedirect } from "../utils/logout";
 import React, { useEffect, useState } from "react";
+// import { Bar } from "react-chartjs-2"; // Uncomment hvis du bruger Chart.js
 
 const initialUsers = [
-  { navn: "Admin", kilde: "CP", score: 90 },
-  { navn: "Bruger 1", kilde: "DS", score: 73 },
-  { navn: "Bruger 2", kilde: "ChatGPT", score: 63 },
-  { navn: "Bruger 3", kilde: "GPT", score: 83 },
+  { navn: "Admin", kilde: "CP", score: 90, chats: 42 },
+  { navn: "Bruger 1", kilde: "DS", score: 73, chats: 12 },
+  { navn: "Bruger 2", kilde: "ChatGPT", score: 63, chats: 9 },
+  { navn: "Bruger 3", kilde: "GPT", score: 83, chats: 29 },
 ];
 
 const initialBlacklist = ["cpr", "afskedigelse", "seksualitet", "diskrimination", "vold"];
@@ -17,29 +19,14 @@ export default function Dashboard() {
   const [newWord, setNewWord] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken");
     fetch("http://localhost:8000/admin/users", {
       headers: { Authorization: token },
     })
       .then((res) => res.ok ? res.json() : Promise.reject("Fejl"))
       .then((data) => setUsers(data))
       .catch(() => setUsers(initialUsers));
-
-    // ⬇️ Skånsom indlæsning af moduler
-    const riskScript = document.createElement("script");
-    riskScript.src = "/risk-module.js";
-    riskScript.async = true;
-    document.body.appendChild(riskScript);
-
-    const dialogScript = document.createElement("script");
-    dialogScript.src = "/DialogModul.js";
-    dialogScript.async = true;
-    document.body.appendChild(dialogScript);
-
-    return () => {
-      document.body.removeChild(riskScript);
-      document.body.removeChild(dialogScript);
-    };
+    // ...eventuel script-loading
   }, []);
 
   const toggleWord = (word) => {
@@ -61,13 +48,12 @@ export default function Dashboard() {
 
   const handleExport = () => {
     const csv = [
-      ["Bruger", "Primær kilde", "Score"],
-      ...users.map((u) => [u.navn, u.kilde, u.score]),
-      ["Gennemsnit", "-", gennemsnit],
+      ["Bruger", "Primær kilde", "Score", "Antal chats"],
+      ...users.map((u) => [u.navn, u.kilde, u.score, u.chats]),
+      ["Gennemsnit", "-", gennemsnit, ""],
     ]
       .map((row) => row.join(","))
       .join("\n");
-
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -76,138 +62,134 @@ export default function Dashboard() {
     link.click();
   };
 
+  // Nu bruger vi best practice logout!
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    window.location.reload();
+    logoutAndRedirect();
   };
 
   const today = "13-05-2025";
   const time = "06:54";
 
   return (
-    <div className="p-4 bg-white rounded shadow text-sm max-w-4xl mx-auto">
-      <div className="flex justify-between items-start mb-4">
-        <div />
-        <div className="text-right text-sm">
-          <div className="text-base font-semibold text-gray-800">
-            Sprog: {language}
-          </div>
-          <div className="text-base font-semibold text-gray-800">
-            Segment: {segment}
+    <div className="min-h-screen bg-gradient-to-b from-white via-gray-50 to-gray-200 py-8 px-2">
+      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-lg px-8 pb-8 pt-6 relative">
+        <div className="flex justify-between items-center mb-2">
+          <img src="/logo.png" alt="AIAmigo logo" className="h-14" />
+          <div className="text-right">
+            <div className="font-bold text-black">Sprog: {language}</div>
+            <div className="font-bold text-black">Segment: {segment}</div>
           </div>
         </div>
-      </div>
 
-      <div className="flex justify-center mb-2">
-        <img src="/logo.png" alt="AIAmigo logo" className="h-16 max-w-[180px]" />
-      </div>
+        <h2 className="text-3xl font-extrabold text-red-700 text-center tracking-tight mb-8 drop-shadow">
+          Admin Dashboard
+        </h2>
 
-      <h2 className="text-2xl font-bold text-red-700 text-center mb-4">
-        Admin Dashboard v2.7 ({language})
-      </h2>
-
-      <div className="flex justify-center">
-        <table className="table-auto mb-4 border-collapse">
-          <thead className="bg-gray-100 text-gray-700 text-left">
-            <tr>
-              <th className="px-2 py-1 whitespace-nowrap">Bruger</th>
-              <th className="px-2 py-1 whitespace-nowrap">Primær kilde</th>
-              <th className="px-2 py-1 whitespace-nowrap">Score</th>
-              <th className="px-2 py-1 w-[160px]">Graf</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user, idx) => (
-              <tr key={idx} className="border-b">
-                <td className="px-2 py-1 whitespace-nowrap">{user.navn}</td>
-                <td className="px-2 py-1 whitespace-nowrap">{user.kilde}</td>
-                <td className="px-2 py-1 whitespace-nowrap">{user.score}%</td>
-                <td className="px-2 py-1">
-                  <div className="w-[160px] bg-gray-200 h-2 rounded">
+        {/* Bruger-kort */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {users.map((user, idx) => (
+            <div
+              key={idx}
+              className="bg-gray-900 rounded-xl shadow p-6 flex flex-col gap-3 border-2 border-red-600"
+            >
+              <div className="flex justify-between items-baseline">
+                <span className="font-semibold text-white">{user.navn}</span>
+                <span className="bg-red-700 text-white rounded px-2 py-1 text-xs font-mono">
+                  {user.kilde}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-bold text-red-400">{user.score}%</span>
+                <div className="flex-1">
+                  <div className="w-full bg-gray-700 rounded h-2">
                     <div
-                      className="h-2 bg-green-600 rounded"
+                      className="h-2 bg-red-600 rounded"
                       style={{ width: `${user.score}%` }}
                     />
                   </div>
-                </td>
-              </tr>
-            ))}
-            <tr className="font-semibold">
-              <td className="px-2 py-1">Gennemsnit</td>
-              <td className="px-2 py-1">–</td>
-              <td className="px-2 py-1">{gennemsnit}%</td>
-              <td className="px-2 py-1">
-                <div className="w-[160px] bg-gray-200 h-2 rounded">
-                  <div
-                    className="h-2 bg-green-600 rounded"
-                    style={{ width: `${gennemsnit}%` }}
-                  />
                 </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:gap-4 mb-6 justify-end">
-        <button
-          onClick={handleExport}
-          className="border border-red-600 text-red-600 px-4 py-2 rounded"
-        >
-          Eksporter CSV
-        </button>
-        <button
-          onClick={handleLogout}
-          className="border border-blue-600 text-blue-600 px-4 py-2 rounded"
-        >
-          Log ud
-        </button>
-      </div>
-
-      <div className="mb-6 mx-auto max-w-sm">
-        <h3 className="text-lg font-semibold text-red-700 mb-2">
-          Blokerede emner
-        </h3>
-        <div className="flex flex-col items-start gap-1">
-          {blacklist.map((word) => (
-            <label
-              key={word}
-              className="flex items-center gap-2 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={blacklist.includes(word)}
-                onChange={() => toggleWord(word)}
-              />
-              <span className="capitalize text-sm text-gray-700">{word}</span>
-            </label>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-gray-200">
+                <span className="font-light">Chats:</span>
+                <span className="font-semibold text-white">{user.chats ?? "?"}</span>
+              </div>
+            </div>
           ))}
-          <div className="mt-2 flex gap-2">
-            <input
-              type="text"
-              value={newWord}
-              onChange={(e) => setNewWord(e.target.value)}
-              placeholder="Tilføj nyt emne"
-              className="border px-2 py-1 text-sm rounded"
-            />
-            <button
-              onClick={handleAddWord}
-              className="border border-gray-400 text-gray-700 px-3 py-1 rounded"
-            >
-              Tilføj
-            </button>
+        </div>
+
+        {/* Gennemsnit og graf */}
+        <div className="mb-8">
+          <div className="bg-red-50 border border-red-200 rounded-xl py-4 px-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-xl font-semibold text-red-800">Gennemsnitlig score:</span>
+              <span className="text-2xl font-extrabold text-black">{gennemsnit}%</span>
+            </div>
+            <div className="w-full max-w-xs md:max-w-sm">
+              {/* 
+              <Bar data={barData} options={{ plugins: { legend: { display: false }}}}/>
+              */}
+              <div className="text-sm text-red-800 italic">[Plads til graf over brugerforbrug]</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="text-xs text-gray-400 text-right mt-6">
-        Sidst opdateret: {today} kl. {time}
+        {/* Knapper */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
+          <button
+            onClick={handleExport}
+            className="bg-white border-2 border-red-700 text-red-700 font-bold px-6 py-2 rounded-lg hover:bg-red-50 transition"
+          >
+            Eksporter CSV
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-red-700 text-white font-bold px-6 py-2 rounded-lg hover:bg-black hover:text-red-400 border-2 border-red-700 transition"
+          >
+            Log ud
+          </button>
+        </div>
+
+        {/* Blacklist */}
+        <div className="mx-auto max-w-md bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-inner">
+          <h3 className="text-lg font-bold text-red-700 mb-3">
+            Blokerede emner
+          </h3>
+          <div className="flex flex-col items-start gap-2">
+            {blacklist.map((word) => (
+              <label
+                key={word}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={blacklist.includes(word)}
+                  onChange={() => toggleWord(word)}
+                />
+                <span className="capitalize text-sm text-gray-700">{word}</span>
+              </label>
+            ))}
+            <div className="mt-3 flex gap-2 w-full">
+              <input
+                type="text"
+                value={newWord}
+                onChange={(e) => setNewWord(e.target.value)}
+                placeholder="Tilføj nyt emne"
+                className="border px-3 py-2 text-sm rounded flex-1"
+              />
+              <button
+                onClick={handleAddWord}
+                className="bg-gray-900 text-white px-4 py-2 rounded-lg border border-gray-400 hover:bg-red-700 transition"
+              >
+                Tilføj
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-xs text-gray-400 text-right mt-8">
+          Sidst opdateret: {today} kl. {time}
+        </div>
       </div>
     </div>
   );
 }
-
-
-
-
-

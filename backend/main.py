@@ -1,21 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.routers import modules, prompts, auth, admin
-import sys
-import os
 
 app = FastAPI()
 
-# ✅ CORS Middleware (tillader lokal frontend at kalde backend)
+# ✅ CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 🌱 Root endpoint (valgfrit test)
+# 🌱 Root endpoint (test)
 @app.get("/")
 async def root():
     return {"message": "Hello, FastAPI is running!"}

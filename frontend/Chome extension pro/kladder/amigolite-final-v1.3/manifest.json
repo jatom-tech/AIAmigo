@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "AmigoLite Final",
+  "version": "1.3",
+  "description": "Personlig AI-beskyttelse direkte i din browser",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "128": "icon.png"
+  }
+}

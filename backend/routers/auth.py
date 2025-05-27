@@ -7,6 +7,8 @@ from fastapi.security import OAuth2PasswordBearer
 from database import get_db
 from user_models import User
 from backend.utils.auth_utils import verify_password
+from fastapi import Request
+from pydantic import BaseModel
 
 # JWT konfiguration
 SECRET_KEY = "your_secret_key"  # SKIFT denne nøgle i produktion!
@@ -35,7 +37,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# Login endpoint
+# Login endpoint (RET HER)
 @router.post("/auth/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == request.username).first()
@@ -45,7 +47,13 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="User is inactive")
     
     access_token = create_access_token(data={"sub": user.username, "role": user.role})
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Returnér også username og role!
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": user.username,
+        "role": user.role
+    }
 
 # Brugervalidering via token
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -77,3 +85,21 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         "role": current_user.role,
         "organization_id": current_user.organization_id
     }
+
+# 🔐 Log-data model
+class PromptLog(BaseModel):
+    user: str
+    prompt: str
+    score: int
+    timestamp: datetime
+
+# 🔒 Endpoint: modtag prompt og log den
+@router.post("/api/log")
+async def log_prompt(
+    log: PromptLog,
+    current_user: User = Depends(get_current_user)
+):
+    print(f"[AIAmigo-LOG] {log.timestamp} | {log.user} | {log.score}% → {log.prompt}")
+
+    # TODO: Her kan du gemme i database hvis ønsket
+    return {"message": "Prompt modtaget og logget"}

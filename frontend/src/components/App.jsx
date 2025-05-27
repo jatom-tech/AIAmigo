@@ -1,66 +1,100 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Route, Switch, Redirect } from "react-router-dom";
-import Dashboard from "./Dashboard";  // Admin Panel
-import UserApp from "./views/UserApp";  // Opdateret sti til views
-import Login from "./Login";  // Login komponent
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Dashboard from "./Dashboard";
+import UserContent from "./UserContent";
+import Login from "./Login";
+
+// Hent login-status og rolle fra localStorage
+function getAuthState() {
+  const token = localStorage.getItem("authToken");
+  const role = localStorage.getItem("role");
+  return {
+    loggedIn: !!token && !!role,
+    role: role || "",
+  };
+}
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [role, setRole] = useState('');
+  const [loggedIn, setLoggedIn] = useState(getAuthState().loggedIn);
+  const [role, setRole] = useState(getAuthState().role);
 
+  // Hold login-status og rolle synkroniseret med localStorage
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    const userRole = localStorage.getItem('userRole');
-
-    if (token && userRole) {
-      setLoggedIn(true);
-      setRole(userRole);
-    } else {
-      setLoggedIn(false);
-    }
+    const handleStorageChange = () => {
+      const { loggedIn: freshLoggedIn, role: freshRole } = getAuthState();
+      setLoggedIn(freshLoggedIn);
+      setRole(freshRole);
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
+
+  // Ved første load: hent auth-status
+  useEffect(() => {
+    const { loggedIn: freshLoggedIn, role: freshRole } = getAuthState();
+    setLoggedIn(freshLoggedIn);
+    setRole(freshRole);
+  }, []);
+
+  // Injicer content-pro.js kun for Pro-brugere OG kun hvis chrome.runtime findes
+  useEffect(() => {
+    if (
+      localStorage.getItem("aiamigoPro") === "true" &&
+      typeof chrome !== "undefined" &&
+      chrome.runtime &&
+      chrome.runtime.getURL
+    ) {
+      const script = document.createElement("script");
+      script.src = chrome.runtime.getURL("content-pro.js");
+      script.type = "text/javascript";
+      script.async = true;
+      document.body.appendChild(script);
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+  }, [loggedIn, role]);
+
+  // PrivateRoute: check login og evt. rolle
+  const PrivateRoute = ({ children, roleRequired }) => {
+    if (!loggedIn) return <Navigate to="/login" replace />;
+    if (roleRequired && role !== roleRequired) return <Navigate to="/" replace />;
+    return children;
+  };
 
   return (
     <Router>
-      <Switch>
-        {/* Login route */}
-        <Route path="/login">
-          <Login setLoggedIn={setLoggedIn} setRole={setRole} />
-        </Route>
-
-        {/* Beskyttede ruter */}
-        <PrivateRoute path="/admin" roleRequired="admin">
-          <Dashboard />
-        </PrivateRoute>
-        <PrivateRoute path="/chatgpt" roleRequired="user">
-          <UserApp />
-        </PrivateRoute>
-
-        {/* Default redirect */}
-        <Redirect from="/" to={loggedIn ? (role === "admin" ? "/admin" : "/chatgpt") : "/login"} />
-      </Switch>
+      <Routes>
+        <Route path="/login" element={<Login setLoggedIn={setLoggedIn} setRole={setRole} />} />
+        <Route
+          path="/admin"
+          element={
+            <PrivateRoute roleRequired="admin">
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/chatgpt"
+          element={
+            <PrivateRoute roleRequired="user">
+              <UserContent />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            loggedIn
+              ? role === "admin"
+                ? <Navigate to="/admin" replace />
+                : <Navigate to="/chatgpt" replace />
+              : <Navigate to="/login" replace />
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
-  );
-}
-
-// PrivateRoute - Beskytter de ruter, der kræver en bestemt rolle
-function PrivateRoute({ children, roleRequired, ...rest }) {
-  const token = localStorage.getItem('authToken');
-  const role = localStorage.getItem('userRole');
-
-  return (
-    <Route
-      {...rest}
-      render={({ location }) =>
-        token ? (
-          role === roleRequired ? (children) : (
-            <Redirect to={{ pathname: "/", state: { from: location } }} />
-          )
-        ) : (
-          <Redirect to={{ pathname: "/login", state: { from: location } }} />
-        )
-      }
-    />
   );
 }
 
