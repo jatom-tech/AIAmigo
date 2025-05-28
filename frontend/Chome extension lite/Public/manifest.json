@@ -1,7 +1,7 @@
 
 {
   "manifest_version": 3,
-  "name": "AIAmigo Gratis Version",
+  "name": "AIAmigoLite Gratis Version",
   "version": "1.0",
   "description": "Gratis version med healing popups og skjold.",
   "permissions": [],
